@@ -21,15 +21,7 @@ class WMRoute extends CWidget {
 	}
 
 	promiseUpdate() {
-		if (!this.#hasMap()) {
-			this.#createAndShowMap();
-		}
-
 		return this.#promiseShowRoute(this.getFieldsData().itemid[0]);
-	}
-
-	#hasMap() {
-		return this.#map !== null;
 	}
 
 	#createAndShowMap() {
@@ -41,11 +33,13 @@ class WMRoute extends CWidget {
 
 		this._body.appendChild(map_wrapper);
 
-		this.#map = L.map(map_wrapper).setView([51.505, -0.09], 13);
+		const map = L.map(map_wrapper);
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution: '&copy; OpenStreetMap contributors'
-		}).addTo(this.#map);
+		}).addTo(map);
+
+		return map;
 	}
 
 	#promiseShowRoute(itemid) {
@@ -70,6 +64,10 @@ class WMRoute extends CWidget {
 			sortorder: 'ASC'
 		})
 			.then(response => {
+				if (this.#map === null) {
+					this.#map = this.#createAndShowMap();
+				}
+
 				const points = response.result
 					.map(row => JSON.parse(row.value))
 					.map(row => [row.lat, row.lng]);

@@ -1,8 +1,4 @@
-Configuration and connection
-----------------------------
+UI improvement
+--------------
 
-- Simple input fields in manifest file
-- ID type fields are arrays
-- View automation
-- Resetting contents
-- Effective updates
+- Just-in-time content modification
