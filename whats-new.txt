@@ -1,10 +1,6 @@
-Host overrides
+Error handling
 --------------
 
-- The principle
-- PHP form usually required
-- PHP form and view
-- Highly customizable
-- Widget fields and views
-- Difference in template dashboards
-- Promise chaining
+- Expect errors at any stage
+- Expect errors between async events
+- Framework treats failures

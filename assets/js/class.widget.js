@@ -13,6 +13,10 @@ class WMRoute extends CWidget {
 	`;
 
 	promiseReady() {
+		if (this.#map === null) {
+			return Promise.resolve();
+		}
+
 		return new Promise(resolve => {
 			this.#map.whenReady(() => {
 				super.promiseReady()
@@ -30,7 +34,13 @@ class WMRoute extends CWidget {
 
 		if (override_hostids.length > 0) {
 			return this.#matchItem(itemids[0], override_hostids[0])
-				.then(matched_itemid => this.#promiseShowRoute(matched_itemid, time_period));
+				.then(matched_itemid => {
+					if (matched_itemid !== false) {
+						return this.#promiseShowRoute(matched_itemid, time_period);
+					}
+
+					this.#showNoDataFound();
+				});
 		}
 
 		return this.#promiseShowRoute(itemids[0], time_period);
@@ -41,15 +51,26 @@ class WMRoute extends CWidget {
 			itemids: [itemid],
 			output: ['key_']
 		})
-			.then(response => response.result[0].key_)
-			.then(key_ =>
-				ApiCall('item.get', {
+			.then(response => {
+				if (response.result.length === 0) {
+					return false;
+				}
+
+				return ApiCall('item.get', {
 					hostids: [override_hostid],
-					filter: {key_},
+					filter: {
+						key_: response.result[0].key_
+					},
 					output: ['itemid']
-				})
-			)
-			.then(response => response.result[0].itemid);
+				});
+			})
+			.then(response => {
+				if (response.result.length === 0) {
+					return false;
+				}
+
+				return response.result[0].itemid;
+			});
 	}
 
 	#createAndShowMap() {
