@@ -1,6 +1,18 @@
-Error handling
---------------
+The PHP
+-------
 
-- Expect errors at any stage
-- Expect errors between async events
-- Framework treats failures
+- PHP Class in manifest file
+- JavaScript is minimized, but always there
+- Default promiseUpdate method
+- Request preparation
+- Widget action and view
+- Input validation
+- Configuration data
+- ZABBIX API
+- Altering widget name
+- Adding custom time icon
+- Mixing views and data
+- Error messages
+- Templates on PHP side
+- setContents method
+- All in one request

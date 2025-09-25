@@ -20,6 +20,11 @@
 			}
 		}
 	},
+	"actions": {
+		"widget.wmroute.view": {
+			"class": "WidgetView"
+		}
+	},
 	"assets": {
 		"js": ["class.widget.js"],
 		"css": ["widget.css"]
