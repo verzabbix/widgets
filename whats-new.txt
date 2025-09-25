@@ -1,5 +1,10 @@
-Variety of views
-----------------
+Host overrides
+--------------
 
-- No data view
-- Route view
+- The principle
+- PHP form usually required
+- PHP form and view
+- Highly customizable
+- Widget fields and views
+- Difference in template dashboards
+- Promise chaining

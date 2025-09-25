@@ -26,8 +26,30 @@ class WMRoute extends CWidget {
 
 		const itemids = fields_data.itemid;
 		const time_period = fields_data.time_period;
+		const override_hostids = fields_data.override_hostid;
+
+		if (override_hostids.length > 0) {
+			return this.#matchItem(itemids[0], override_hostids[0])
+				.then(matched_itemid => this.#promiseShowRoute(matched_itemid, time_period));
+		}
 
 		return this.#promiseShowRoute(itemids[0], time_period);
+	}
+
+	#matchItem(itemid, override_hostid) {
+		return ApiCall('item.get', {
+			itemids: [itemid],
+			output: ['key_']
+		})
+			.then(response => response.result[0].key_)
+			.then(key_ =>
+				ApiCall('item.get', {
+					hostids: [override_hostid],
+					filter: {key_},
+					output: ['itemid']
+				})
+			)
+			.then(response => response.result[0].itemid);
 	}
 
 	#createAndShowMap() {
