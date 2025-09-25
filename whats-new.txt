@@ -1,10 +1,11 @@
-Hello World!
-------------
+Simple Map
+----------
 
-- Widget is a module
-- Module is a directory
-- Just a manifest file is required
-- Works already
-- Has default functionality defined
-
-https://www.zabbix.com/documentation/current/en/devel/modules/file_structure/manifest
+- Can be purely JavaScript
+- Custom JavaScript class in manifest file
+- Promise based visualization
+- Updated on demand
+- Autonomous
+- Base class provides convenience
+- Controlled by the dashboard framework
+- Assets defined in the manifest file
