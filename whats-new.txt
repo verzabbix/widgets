@@ -1,5 +1,5 @@
-CSS assets
-----------
+Basic Route
+-----------
 
-- CSS assets defined in manifest file
-- Presentation and configuration form CSS classes
+- Leaflet manipulation
+- Inline images in JavaScript
