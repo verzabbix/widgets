@@ -1,8 +1,5 @@
-Events and readiness
---------------------
+CSS assets
+----------
 
-- Must report when ready
-- Reacts to the events
-- Either text or full-size mode
-
-https://leafletjs.com/reference.html#map-whenready
+- CSS assets defined in manifest file
+- Presentation and configuration form CSS classes
