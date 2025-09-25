@@ -1,0 +1,10 @@
+Hello World!
+------------
+
+- Widget is a module
+- Module is a directory
+- Just a manifest file is required
+- Works already
+- Has default functionality defined
+
+https://www.zabbix.com/documentation/current/en/devel/modules/file_structure/manifest
