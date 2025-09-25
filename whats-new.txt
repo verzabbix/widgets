@@ -1,5 +1,9 @@
-Basic Route
------------
+ZABBIX API requests
+-------------------
 
-- Leaflet manipulation
-- Inline images in JavaScript
+- ZABBIX API accessible from JavaScript
+- API based on Promises
+- API request format
+- Constants predefined
+
+https://www.zabbix.com/documentation/current/en/manual/api/reference/history/get

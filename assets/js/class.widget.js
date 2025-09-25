@@ -19,7 +19,7 @@ class WMRoute extends CWidget {
 
 	promiseUpdate() {
 		if (!this.hasEverUpdated()) {
-			this.#createAndShowMap();
+			return this.#createAndShowMap();
 		}
 
 		return Promise.resolve();
@@ -38,23 +38,34 @@ class WMRoute extends CWidget {
 			attribution: '&copy; OpenStreetMap contributors'
 		}).addTo(this.#map);
 
-		const points = [
-			[51.505, -0.09],
-			[51.507, -0.095],
-			[51.51, -0.1]
-		];
+		const time = Math.floor(Date.now() / 1000);
 
-		L.polyline(points, {color: 'blue'}).addTo(this.#map);
+		return ApiCall('history.get', {
+			history: ITEM_VALUE_TYPE_STR,
+			itemids: ['68626'],
+			time_from: time - 60 * 60,
+			time_till: time,
+			output: ['value'],
+			sortfield: 'clock',
+			sortorder: 'ASC'
+		})
+			.then(response => {
+				const points = response.result
+					.map(row => JSON.parse(row.value))
+					.map(row => [row.lat, row.lng]);
 
-		const icon = L.icon({
-			iconUrl: `data:image/svg+xml;base64,${btoa(this.#icon_svg)}`,
-			iconSize: [46, 61],
-			iconAnchor: [22, 44]
-		});
+				L.polyline(points, {color: 'blue'}).addTo(this.#map);
 
-		L.marker([51.51, -0.1], {icon}).addTo(this.#map);
+				const icon = L.icon({
+					iconUrl: `data:image/svg+xml;base64,${btoa(this.#icon_svg)}`,
+					iconSize: [46, 61],
+					iconAnchor: [22, 44]
+				});
 
-		this.#map.fitBounds(points);
+				L.marker(...points.slice(-1), {icon}).addTo(this.#map);
+
+				this.#map.fitBounds(points);
+			});
 	}
 
 	onResize() {
