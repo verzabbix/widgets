@@ -4,6 +4,7 @@ class WMRoute extends CWidget {
 	#map_layers = [];
 
 	#itemid = null;
+	#time_period = null;
 
 	#icon_svg = `
 		<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
@@ -21,7 +22,12 @@ class WMRoute extends CWidget {
 	}
 
 	promiseUpdate() {
-		return this.#promiseShowRoute(this.getFieldsData().itemid[0]);
+		const fields_data = this.getFieldsData();
+
+		const itemids = fields_data.itemid;
+		const time_period = fields_data.time_period;
+
+		return this.#promiseShowRoute(itemids[0], time_period);
 	}
 
 	#createAndShowMap() {
@@ -42,23 +48,22 @@ class WMRoute extends CWidget {
 		return map;
 	}
 
-	#promiseShowRoute(itemid) {
-		if (itemid === this.#itemid) {
+	#promiseShowRoute(itemid, time_period) {
+		if (itemid === this.#itemid && time_period === this.#time_period) {
 			return Promise.resolve();
 		}
 
 		this.#itemid = itemid;
+		this.#time_period = time_period;
 
 		this.#map_layers.forEach(layer => this.#map.removeLayer(layer));
 		this.#map_layers = [];
 
-		const time = Math.floor(Date.now() / 1000);
-
 		return ApiCall('history.get', {
 			history: ITEM_VALUE_TYPE_STR,
 			itemids: [itemid],
-			time_from: time - 60 * 60,
-			time_till: time,
+			time_from: time_period.from_ts,
+			time_till: time_period.to_ts,
 			output: ['value'],
 			sortfield: 'clock',
 			sortorder: 'ASC'
@@ -103,6 +108,7 @@ class WMRoute extends CWidget {
 		this.#map_layers = [];
 
 		this.#itemid = null;
+		this.#time_period = null;
 	}
 
 	onResize() {

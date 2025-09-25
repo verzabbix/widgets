@@ -1,4 +1,6 @@
-UI improvement
---------------
+Time periods
+------------
 
-- Just-in-time content modification
+- Time period in manifest file
+- Time period selector on demand
+- Time period format
