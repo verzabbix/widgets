@@ -69,34 +69,49 @@ class WMRoute extends CWidget {
 			sortorder: 'ASC'
 		})
 			.then(response => {
-				if (this.#map === null) {
-					this.#map = this.#createAndShowMap();
-				}
-
 				const points = response.result
 					.map(row => JSON.parse(row.value))
 					.map(row => [row.lat, row.lng]);
 
-				if (points.length > 0) {
-					const polyline = L.polyline(points, {color: 'blue'});
+				if (points.length === 0) {
+					this.#showNoDataFound();
 
-					polyline.addTo(this.#map);
-
-					const icon = L.icon({
-						iconUrl: `data:image/svg+xml;base64,${btoa(this.#icon_svg)}`,
-						iconSize: [46, 61],
-						iconAnchor: [22, 44]
-					});
-
-					const marker = L.marker(...points.slice(-1), {icon});
-
-					marker.addTo(this.#map);
-
-					this.#map.fitBounds(points);
-
-					this.#map_layers.push(polyline, marker);
+					return;
 				}
+
+				if (this.#map === null) {
+					this.#map = this.#createAndShowMap();
+				}
+
+				const polyline = L.polyline(points, {color: 'blue'});
+
+				polyline.addTo(this.#map);
+
+				const icon = L.icon({
+					iconUrl: `data:image/svg+xml;base64,${btoa(this.#icon_svg)}`,
+					iconSize: [46, 61],
+					iconAnchor: [22, 44]
+				});
+
+				const marker = L.marker(...points.slice(-1), {icon});
+
+				marker.addTo(this.#map);
+
+				this.#map.fitBounds(points);
+
+				this.#map_layers.push(polyline, marker);
 			});
+	}
+
+	#showNoDataFound() {
+		this.clearContents();
+
+		const message_wrapper = document.createElement('div');
+
+		message_wrapper.textContent = 'No data found';
+		message_wrapper.classList.add(ZBX_STYLE_NO_DATA_MESSAGE, ZBX_ICON_SEARCH_LARGE);
+
+		this._body.appendChild(message_wrapper);
 	}
 
 	onClearContents() {

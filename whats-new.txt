@@ -1,6 +1,5 @@
-Time periods
-------------
+Variety of views
+----------------
 
-- Time period in manifest file
-- Time period selector on demand
-- Time period format
+- No data view
+- Route view
