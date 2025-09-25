@@ -1,6 +1,9 @@
 class WMRoute extends CWidget {
 
 	#map = null;
+	#map_layers = [];
+
+	#itemid = null;
 
 	#icon_svg = `
 		<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
@@ -18,14 +21,20 @@ class WMRoute extends CWidget {
 	}
 
 	promiseUpdate() {
-		if (!this.hasEverUpdated()) {
-			return this.#createAndShowMap();
+		if (!this.#hasMap()) {
+			this.#createAndShowMap();
 		}
 
-		return Promise.resolve();
+		return this.#promiseShowRoute(this.getFieldsData().itemid[0]);
+	}
+
+	#hasMap() {
+		return this.#map !== null;
 	}
 
 	#createAndShowMap() {
+		this.clearContents();
+
 		const map_wrapper = document.createElement('div');
 
 		map_wrapper.classList.add('map-wrapper');
@@ -37,12 +46,23 @@ class WMRoute extends CWidget {
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution: '&copy; OpenStreetMap contributors'
 		}).addTo(this.#map);
+	}
+
+	#promiseShowRoute(itemid) {
+		if (itemid === this.#itemid) {
+			return Promise.resolve();
+		}
+
+		this.#itemid = itemid;
+
+		this.#map_layers.forEach(layer => this.#map.removeLayer(layer));
+		this.#map_layers = [];
 
 		const time = Math.floor(Date.now() / 1000);
 
 		return ApiCall('history.get', {
 			history: ITEM_VALUE_TYPE_STR,
-			itemids: ['68626'],
+			itemids: [itemid],
 			time_from: time - 60 * 60,
 			time_till: time,
 			output: ['value'],
@@ -54,18 +74,37 @@ class WMRoute extends CWidget {
 					.map(row => JSON.parse(row.value))
 					.map(row => [row.lat, row.lng]);
 
-				L.polyline(points, {color: 'blue'}).addTo(this.#map);
+				if (points.length > 0) {
+					const polyline = L.polyline(points, {color: 'blue'});
 
-				const icon = L.icon({
-					iconUrl: `data:image/svg+xml;base64,${btoa(this.#icon_svg)}`,
-					iconSize: [46, 61],
-					iconAnchor: [22, 44]
-				});
+					polyline.addTo(this.#map);
 
-				L.marker(...points.slice(-1), {icon}).addTo(this.#map);
+					const icon = L.icon({
+						iconUrl: `data:image/svg+xml;base64,${btoa(this.#icon_svg)}`,
+						iconSize: [46, 61],
+						iconAnchor: [22, 44]
+					});
 
-				this.#map.fitBounds(points);
+					const marker = L.marker(...points.slice(-1), {icon});
+
+					marker.addTo(this.#map);
+
+					this.#map.fitBounds(points);
+
+					this.#map_layers.push(polyline, marker);
+				}
 			});
+	}
+
+	onClearContents() {
+		if (this.#map !== null) {
+			this.#map.remove();
+		}
+
+		this.#map = null;
+		this.#map_layers = [];
+
+		this.#itemid = null;
 	}
 
 	onResize() {
