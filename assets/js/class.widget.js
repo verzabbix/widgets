@@ -44,7 +44,7 @@ class WMRoute extends CWidget {
 		if (!this.hasEverUpdated()) {
 			const map_wrapper = document.createElement('div');
 
-			map_wrapper.style.height = '100%';
+			map_wrapper.classList.add('map-wrapper');
 
 			// Set the content for a particular widget instance.
 			this._body.appendChild(map_wrapper);

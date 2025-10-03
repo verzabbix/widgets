@@ -1,0 +1,14 @@
+/*
+	div.dashboard-widget-{Widget ID from the manifest file}
+	- For addressing the presentation of the widget.
+
+	form.dashboard-widget-{Widget ID from the manifest file}
+	- For addressing the configuration form of the widget.
+*/
+
+div.dashboard-widget-wmroute .map-wrapper {
+	height: 100%;
+
+	/* Set z-index to override the z-index of the Leaflet component. */
+	z-index: 1;
+}
