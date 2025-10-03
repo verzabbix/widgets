@@ -81,7 +81,56 @@ class WMRoute extends CWidget {
 		// Time period object, containing "from", "to", "from_ts" and "to_ts" keys.
 		const time_period = fields_data.time_period;
 
+		/*
+		 * Match the item on the override host only if presenting the widget on a global dashboard.
+		 *
+		 * If presenting on a host dashboard (see Monitoring => Hosts => Dashboards), the item substitution will be done
+		 * automatically and the item ID will point to the matched item on the presented host.
+		 */
+
+		// Is the widget being presented on a global dashboard?
+		if (this._dashboard.templateid === null) {
+			// The ID of the host for which a similar item should be searched for.
+			const override_hostid = fields_data.override_hostid.length > 0
+				? fields_data.override_hostid[0]
+				: null;
+
+			if (override_hostid !== null) {
+				// Show the route for the matched item if the host override is specified.
+				return this.#matchItem(itemid, override_hostid)
+					.then(matched_itemid => this.#promiseShowRoute(matched_itemid, time_period));
+			}
+		}
+
 		return this.#promiseShowRoute(itemid, time_period);
+	}
+
+	/**
+	 * Find a matching item on the specified host, having the same key as the original item.
+	 *
+	 * @param itemid
+	 * @param override_hostid
+	 *
+	 * @returns {Promise<string>}
+	 */
+	#matchItem(itemid, override_hostid) {
+		// Get the key of the specified item.
+		return ApiCall('item.get', {
+			itemids: [itemid],
+			output: ['key_']
+		})
+			// Extract the key from the result data.
+			.then(response => response.result[0].key_)
+			.then(key_ =>
+				// Search for the similar item on the specified override host.
+				ApiCall('item.get', {
+					hostids: [override_hostid],
+					filter: {key_},
+					output: ['itemid']
+				})
+			)
+			// Extract matched item ID from the result data.
+			.then(response => response.result[0].itemid);
 	}
 
 	/**
