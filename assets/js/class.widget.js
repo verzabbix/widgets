@@ -6,17 +6,6 @@
 class WMRoute extends CWidget {
 
 	/**
-	 * Inline SVG image for use as a finish marker of the route.
-	 *
-	 * @type {string}
-	 */
-	static #icon_svg = `
-		<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-			<path fill="#B44" fill-rule="evenodd" clip-rule="evenodd" d="M12 24C12.972 24 18 15.7794 18 12.3C18 8.82061 15.3137 6 12 6C8.68629 6 6 8.82061 6 12.3C6 15.7794 11.028 24 12 24ZM12.0001 15.0755C13.4203 15.0755 14.5716 13.8565 14.5716 12.3528C14.5716 10.8491 13.4203 9.63011 12.0001 9.63011C10.58 9.63011 9.42871 10.8491 9.42871 12.3528C9.42871 13.8565 10.58 15.0755 12.0001 15.0755Z"/>
-		</svg>
-	`;
-
-	/**
 	 * Map object of the Leaflet component.
 	 */
 	#map = null;
@@ -29,18 +18,22 @@ class WMRoute extends CWidget {
 	#map_layers = [];
 
 	/**
-	 * The ID of the item, for which the route is currently being displayed.
+	 * Prepare server request data for updating the widget.
 	 *
-	 * @type {string|null}
-	 */
-	#itemid = null;
-
-	/**
-	 * The time period for which the route is currently being displayed.
+	 * @see CWidget.getUpdateRequestData
 	 *
-	 * @type {Object|null}
+	 * @returns {Object}
 	 */
-	#time_period = null;
+	getUpdateRequestData() {
+		return {
+			// Use all default data.
+			...super.getUpdateRequestData(),
+			// Request the server to return the templates (the finish icon marker) needed for map creation.
+			with_templates: this.#map === null ? 1 : undefined,
+			// Let the server know if the widget is configured for a static time period.
+			has_custom_time_period: this.getFieldsReferredData().has('time_period') ? undefined : 1
+		}
+	}
 
 	/**
 	 * Resolve as soon as the widget is fully rendered (ready for printing).
@@ -77,202 +70,69 @@ class WMRoute extends CWidget {
 	 * @returns {Promise<void>}
 	 */
 	promiseUpdate() {
-		// Get the actual configuration data.
-		const fields_data = this.getFieldsData();
-
-		// Get the ID of the item, for which the route shall be displayed (IDs always have a type of array).
-		const itemid = fields_data.itemid[0];
-
-		// Time period object, containing "from", "to", "from_ts" and "to_ts" keys.
-		const time_period = fields_data.time_period;
-
-		/*
-		 * Match the item on the override host only if presenting the widget on a global dashboard.
-		 *
-		 * If presenting on a host dashboard (see Monitoring => Hosts => Dashboards), the item substitution will be done
-		 * automatically and the item ID will point to the matched item on the presented host.
-		 */
-
-		// Is the widget being presented on a global dashboard?
-		if (this._dashboard.templateid === null) {
-			// The ID of the host for which a similar item should be searched for.
-			const override_hostid = fields_data.override_hostid.length > 0
-				? fields_data.override_hostid[0]
-				: null;
-
-			if (override_hostid !== null) {
-				// Show the route for the matched item if the host override is specified.
-				return this.#matchItem(itemid, override_hostid)
-					.then(matched_itemid => {
-						if (matched_itemid !== null) {
-							return this.#promiseShowRoute(matched_itemid, time_period);
-						}
-
-						this.#showNoDataFound();
-					});
-			}
+		if (!this.hasEverUpdated() || this.isFieldsReferredDataUpdated()) {
+			// Only update the widget on the very first request or when the data has changed.
+			return super.promiseUpdate();
 		}
 
-		return this.#promiseShowRoute(itemid, time_period);
+		// Do not update the widget if nothing changed.
+		return Promise.resolve();
 	}
 
 	/**
-	 * Find a matching item on the specified host, having the same key as the original item.
+	 * Update the widget body if the update cycle has run successfully and without errors.
 	 *
-	 * @param itemid
-	 * @param override_hostid
+	 * @param {Object} response
 	 *
-	 * @returns {Promise<string>}
+	 * @see CWidget.setContents
 	 */
-	#matchItem(itemid, override_hostid) {
-		// Get the key of the specified item.
-		return ApiCall('item.get', {
-			itemids: [itemid],
-			output: ['key_']
-		})
-			.then(response => {
-				if (response.result.length === 0) {
-					// Resolve the promise with null if the item was not found.
-					return null;
-				}
+	setContents(response) {
+		if (response.points === undefined) {
+			this.clearContents();
 
-				// Search for the similar item on the specified override host.
-				return ApiCall('item.get', {
-					hostids: [override_hostid],
-					filter: {
-						key_: response.result[0].key_
-					},
-					output: ['itemid']
-				})
-					.then(response => {
-						if (response.result.length === 0) {
-							// Resolve the promise with null if the matching item was not found.
-							return null;
-						}
+			super.setContents(response);
 
-						return response.result[0].itemid;
-					});
-			});
-	}
-
-	/**
-	 * Create and show the map.
-	 *
-	 * Currently displayed contents will be cleared.
-	 */
-	#createAndShowMap() {
-		this.clearContents();
-
-		const map_wrapper = document.createElement('div');
-
-		map_wrapper.classList.add('map-wrapper');
-
-		// Set the content for a particular widget instance.
-		this._body.appendChild(map_wrapper);
-
-		// Focus the map in the center of London.
-		const map = L.map(map_wrapper);
-
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution: '&copy; OpenStreetMap contributors'
-		}).addTo(map);
-
-		return map;
-	}
-
-	/**
-	 * Promise to show the route of the specified item.
-	 *
-	 * @param {string} itemid
-	 * @param {Object} time_period
-	 *
-	 * @returns {Promise<void>}
-	 */
-	#promiseShowRoute(itemid, time_period) {
-		if (itemid === this.#itemid && time_period === this.#time_period) {
-			// Do nothing if the route of the specified item ID and the time period is already being displayed.
-			return Promise.resolve();
+			return;
 		}
 
-		// Save the new displayed item ID and the time period.
-		this.#itemid = itemid;
-		this.#time_period = time_period;
+		if (this.#map === null) {
+			this.clearContents();
+
+			super.setContents(response);
+
+			this.#map = L.map(this._body.querySelector('.map-wrapper'));
+			this.#map_layers = [];
+
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: '&copy; OpenStreetMap contributors'
+			}).addTo(this.#map);
+		}
 
 		// Remove previous way-points and the finish marker from the map.
 		this.#map_layers.forEach(layer => this.#map.removeLayer(layer));
 		this.#map_layers = [];
 
-		// Run the "history.get" ZABBIX API method and return a promise.
-		return ApiCall('history.get', {
-			// Use inline constant instead of numbers.
-			history: ITEM_VALUE_TYPE_STR,
-			// Retrieve the history data for the specified item and the time period.
-			itemids: [itemid],
-			time_from: time_period.from_ts,
-			time_till: time_period.to_ts,
-			// Get only the values from the history, timestamps are not needed.
-			output: ['value'],
-			// Sort the data by the clock.
-			sortfield: 'clock',
-			sortorder: 'ASC'
-		})
-			.then(response => {
-				const points = response.result
-					// Parse received JSON data.
-					.map(row => JSON.parse(row.value))
-					// Convert the data to the required format.
-					.map(row => [row.lat, row.lng]);
+		const polyline = L.polyline(response.points, {color: 'blue'});
 
-				if (points.length === 0) {
-					// Show a nice message in case if there are no way-points to show.
-					this.#showNoDataFound();
+		// Display the way-points on the map.
+		polyline.addTo(this.#map);
 
-					return;
-				}
+		// Create a marker icon from the inline SVG image.
+		const icon = L.icon({
+			iconUrl: `data:image/svg+xml;base64,${btoa(this._body.querySelector('template.svg-marker').innerHTML)}`,
+			iconSize: [46, 61],
+			iconAnchor: [22, 44]
+		});
 
-				if (this.#map === null) {
-					this.#map = this.#createAndShowMap();
-				}
+		const marker = L.marker(...response.points.slice(-1), {icon});
 
-				const polyline = L.polyline(points, {color: 'blue'});
+		// Display the icon over the last way-point as a finish marker.
+		marker.addTo(this.#map);
 
-				// Display the way-points on the map.
-				polyline.addTo(this.#map);
+		// Show the whole route centered and fully visible on the map.
+		this.#map.fitBounds(response.points);
 
-				// Create a marker icon from the inline SVG image.
-				const icon = L.icon({
-					iconUrl: `data:image/svg+xml;base64,${btoa(WMRoute.#icon_svg)}`,
-					iconSize: [46, 61],
-					iconAnchor: [22, 44]
-				});
-
-				const marker = L.marker(...points.slice(-1), {icon});
-
-				// Display the icon over the last way-point as a finish marker.
-				marker.addTo(this.#map);
-
-				// Show the whole route centered and fully visible on the map.
-				this.#map.fitBounds(points);
-
-				this.#map_layers.push(polyline, marker);
-			});
-	}
-
-	/**
-	 * Show a no-data message and clear the previously displayed contents.
-	 */
-	#showNoDataFound() {
-		// Calling this method will also invoke the onClearContents method.
-		this.clearContents();
-
-		const message_wrapper = document.createElement('div');
-
-		message_wrapper.textContent = 'No data found';
-
-		// Use standard classes to specify the look of the message.
-		message_wrapper.classList.add(ZBX_STYLE_NO_DATA_MESSAGE, ZBX_ICON_SEARCH_LARGE);
-
-		this._body.appendChild(message_wrapper);
+		this.#map_layers.push(polyline, marker);
 	}
 
 	/**
@@ -288,9 +148,6 @@ class WMRoute extends CWidget {
 
 		this.#map = null;
 		this.#map_layers = [];
-
-		this.#itemid = null;
-		this.#time_period = null;
 	}
 
 	/**

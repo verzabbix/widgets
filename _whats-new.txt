@@ -1,6 +1,17 @@
-12 - Error Handling
--------------------
+13 - The PHP
+------------
 
-- Errors will happen at any stage.
-- Errors are expected between async events.
-- Framework treats exceptions.
+- The PHP Class must be specified in the manifest file.
+- The most of the JavaScript functionality can be done on server side.
+- The default "promiseUpdate" method fetches the contents from the PHP side.
+- Custom request data can be prepared for the content request.
+- PHP-side widget presentation consists of the action (WidgetView.php) and the presentation (widget.view.php).
+- All input data must undergo validation.
+- All configuration data is available in $this->fields_values.
+- ZABBIX API is available through API class.
+- Default widget name can be altered to better represent the contents.
+- Custom time icon can be displayed in case if the widget is configured for a custom time period.
+- Both HTML code and JSON data can be returned to the JavaScript class.
+- Error messages can be presented on PHP side.
+- The "setContents" method in JavaScript class might take additional steps to display the contents.
+- Massive data transfer can be eliminated when all calculations are done on PHP side.
