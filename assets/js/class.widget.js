@@ -51,6 +51,11 @@ class WMRoute extends CWidget {
 	 * @returns {Promise<unknown>}
 	 */
 	promiseReady() {
+		if (this.#map === null) {
+			// Resolve immediately if the widget has displayed a non-map view after the first update.
+			return Promise.resolve();
+		}
+
 		return new Promise(resolve => {
 			// Wait unless the map is ready (Leaflet implements its own readiness callback).
 			this.#map.whenReady(() => {
@@ -98,7 +103,13 @@ class WMRoute extends CWidget {
 			if (override_hostid !== null) {
 				// Show the route for the matched item if the host override is specified.
 				return this.#matchItem(itemid, override_hostid)
-					.then(matched_itemid => this.#promiseShowRoute(matched_itemid, time_period));
+					.then(matched_itemid => {
+						if (matched_itemid !== null) {
+							return this.#promiseShowRoute(matched_itemid, time_period);
+						}
+
+						this.#showNoDataFound();
+					});
 			}
 		}
 
@@ -119,18 +130,29 @@ class WMRoute extends CWidget {
 			itemids: [itemid],
 			output: ['key_']
 		})
-			// Extract the key from the result data.
-			.then(response => response.result[0].key_)
-			.then(key_ =>
+			.then(response => {
+				if (response.result.length === 0) {
+					// Resolve the promise with null if the item was not found.
+					return null;
+				}
+
 				// Search for the similar item on the specified override host.
-				ApiCall('item.get', {
+				return ApiCall('item.get', {
 					hostids: [override_hostid],
-					filter: {key_},
+					filter: {
+						key_: response.result[0].key_
+					},
 					output: ['itemid']
 				})
-			)
-			// Extract matched item ID from the result data.
-			.then(response => response.result[0].itemid);
+					.then(response => {
+						if (response.result.length === 0) {
+							// Resolve the promise with null if the matching item was not found.
+							return null;
+						}
+
+						return response.result[0].itemid;
+					});
+			});
 	}
 
 	/**

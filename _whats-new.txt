@@ -1,13 +1,6 @@
-11 - Host Overrides
+12 - Error Handling
 -------------------
 
-- The host overriding is done automatically for host dashboards.
-- The host overriding is applied to items and graphs.
-- The PHP form is usually required.
-- The PHP form is highly customizable.
-- The PHP form works with the individual PHP widget fields.
-- The PHP form consists of the data logic (WidgetForm.php) and the presentation (widget.edit.js).
-- The individual PHP widget fields consist of the data logic and the presentation too.
-- The PHP form data logic works with the widget field data logic.
-- The PHP form presentation works with the presentation of the individual widget fields.
-- Promises can be chained.
+- Errors will happen at any stage.
+- Errors are expected between async events.
+- Framework treats exceptions.
