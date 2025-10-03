@@ -1,12 +1,8 @@
-02 - Simple Map
----------------
+03 - Events and Readiness
+-------------------------
 
-- Widget can be written purely in JavaScript.
-- Widget is fully encapsulated as a class instance.
-- Custom JavaScript class must be mentioned in the manifest file.
-- Base JavaScript classes provide convenience.
-- Base JavaScript classes define the default functionality.
-- Widget is controlled by the dashboard framework.
-- Widget is updated on demand by the framework.
-- Promise-based visualization.
-- Assets must be defined in the manifest file.
+- Widget must report when it's ready.
+- Widget can react to the built-in events.
+- Widget is presented in either text or full-size mode.
+
+https://leafletjs.com/reference.html#map-whenready
