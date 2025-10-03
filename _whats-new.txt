@@ -1,5 +1,5 @@
-04 - CSS Assets
----------------
+05 - Basic Route
+----------------
 
-- CSS assets must be defined in the manifest file.
-- Convention on specifying the CSS rules for widget presentation and configuration form.
+- Leaflet map manipulation.
+- Images can be specified inline in JavaScript.
