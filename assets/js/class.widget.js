@@ -53,7 +53,7 @@ class WMRoute extends CWidget {
 	promiseUpdate() {
 		// Use convenient methods from the base CWidget and CWidgetBase classes.
 		if (!this.hasEverUpdated()) {
-			this.#createAndShowMap();
+			return this.#promiseCreateAndShowMap();
 		}
 
 		// Return a resolved promise, since the update routine is promise-based.
@@ -61,9 +61,11 @@ class WMRoute extends CWidget {
 	}
 
 	/**
-	 * Create and show the map with the example way-points.
+	 * Promise to create and show the map with the way-points fetched for a particular item.
+	 *
+	 * @returns {Promise<void>}
 	 */
-	#createAndShowMap() {
+	#promiseCreateAndShowMap() {
 		const map_wrapper = document.createElement('div');
 
 		map_wrapper.classList.add('map-wrapper');
@@ -78,28 +80,47 @@ class WMRoute extends CWidget {
 			attribution: '&copy; OpenStreetMap contributors'
 		}).addTo(this.#map);
 
-		// Define random way-points in London city.
-		const points = [
-			[51.505, -0.09],
-			[51.507, -0.095],
-			[51.51, -0.1]
-		];
+		// Calculate current UNIX timestamp.
+		const time = Math.floor(Date.now() / 1000);
 
-		// Display the way-points on the map.
-		L.polyline(points, {color: 'blue'}).addTo(this.#map);
+		// Run the "history.get" ZABBIX API method and return a promise.
+		return ApiCall('history.get', {
+			// Use inline constant instead of numbers.
+			history: ITEM_VALUE_TYPE_STR,
+			// Use exact Item ID for testing purposes.
+			itemids: ['68626'],
+			// Specify the last hour for history data extraction.
+			time_from: time - 60 * 60,
+			time_till: time,
+			// Get only the values from the history, timestamps are not needed.
+			output: ['value'],
+			// Sort the data by the clock.
+			sortfield: 'clock',
+			sortorder: 'ASC'
+		})
+			.then(response => {
+				const points = response.result
+					// Parse received JSON data.
+					.map(row => JSON.parse(row.value))
+					// Convert the data to the required format.
+					.map(row => [row.lat, row.lng]);
 
-		// Create a marker icon from the inline SVG image.
-		const icon = L.icon({
-			iconUrl: `data:image/svg+xml;base64,${btoa(WMRoute.#icon_svg)}`,
-			iconSize: [46, 61],
-			iconAnchor: [22, 44]
-		});
+				// Display the way-points on the map.
+				L.polyline(points, {color: 'blue'}).addTo(this.#map);
 
-		// Display the icon over the last way-point as a finish marker.
-		L.marker([51.51, -0.1], {icon}).addTo(this.#map);
+				// Create a marker icon from the inline SVG image.
+				const icon = L.icon({
+					iconUrl: `data:image/svg+xml;base64,${btoa(WMRoute.#icon_svg)}`,
+					iconSize: [46, 61],
+					iconAnchor: [22, 44]
+				});
 
-		// Show the whole route centered and fully visible on the map.
-		this.#map.fitBounds(points);
+				// Display the icon over the last way-point as a finish marker.
+				L.marker(...points.slice(-1), {icon}).addTo(this.#map);
+
+				// Show the whole route centered and fully visible on the map.
+				this.#map.fitBounds(points);
+			});
 	}
 
 	/**

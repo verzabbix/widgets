@@ -1,5 +1,9 @@
-05 - Basic Route
-----------------
+06 - ZABBIX API Requests
+------------------------
 
-- Leaflet map manipulation.
-- Images can be specified inline in JavaScript.
+- ZABBIX API can be accessed from the JavaScript.
+- ZABBIX API is based on Promises.
+- ZABBIX API request format is similar to the PHP's version.
+- Predefined constants can be used.
+
+https://www.zabbix.com/documentation/current/en/manual/api/reference/history/get
