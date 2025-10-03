@@ -1,0 +1,10 @@
+{
+	"manifest_version": 2.0,
+	"id": "wmroute",
+	"type": "widget",
+	"name": "Wellmade Route",
+	"namespace": "WMRoute",
+	"version": "1.0",
+	"author": "Wellmade",
+	"description": "Displays route on a map."
+}
