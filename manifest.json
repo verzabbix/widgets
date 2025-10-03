@@ -8,7 +8,13 @@
 	"author": "Wellmade",
 	"description": "Displays route on a map.",
 	"widget": {
-		"js_class": "WMRoute"
+		"js_class": "WMRoute",
+        "in": {
+			"itemid": {
+				"type": "_itemid",
+				"required": true
+			}
+		}
 	},
 	"assets": {
 		"js": ["class.widget.js"],

@@ -22,6 +22,20 @@ class WMRoute extends CWidget {
 	#map = null;
 
 	/**
+	 * The route and the finish marker layers on the map.
+	 *
+	 * @type {Array}
+	 */
+	#map_layers = [];
+
+	/**
+	 * The ID of the item, for which the route is currently being displayed.
+	 *
+	 * @type {string|null}
+	 */
+	#itemid = null;
+
+	/**
 	 * Resolve as soon as the widget is fully rendered (ready for printing).
 	 *
 	 * Overloads the default implementation of the readiness method.
@@ -51,21 +65,35 @@ class WMRoute extends CWidget {
 	 * @returns {Promise<void>}
 	 */
 	promiseUpdate() {
-		// Use convenient methods from the base CWidget and CWidgetBase classes.
-		if (!this.hasEverUpdated()) {
-			return this.#promiseCreateAndShowMap();
+		if (!this.#isMapCreated()) {
+			// Create and show the map if it's the first update or the contents have been cleared by the dashboard
+			// framework for displaying the "Awaiting data" screen.
+			this.#createAndShowMap();
 		}
 
-		// Return a resolved promise, since the update routine is promise-based.
-		return Promise.resolve();
+		// Get the ID of the item, for which the route shall be displayed (IDs always have a type of array).
+		const itemid = this.getFieldsData().itemid[0];
+
+		return this.#promiseShowRoute(itemid);
 	}
 
 	/**
-	 * Promise to create and show the map with the way-points fetched for a particular item.
+	 * Check if the map has been created and is currently being shown.
 	 *
-	 * @returns {Promise<void>}
+	 * @returns {boolean}
 	 */
-	#promiseCreateAndShowMap() {
+	#isMapCreated() {
+		return this.#map !== null;
+	}
+
+	/**
+	 * Create and show the map.
+	 *
+	 * Currently displayed contents will be cleared.
+	 */
+	#createAndShowMap() {
+		this.clearContents();
+
 		const map_wrapper = document.createElement('div');
 
 		map_wrapper.classList.add('map-wrapper');
@@ -79,6 +107,27 @@ class WMRoute extends CWidget {
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution: '&copy; OpenStreetMap contributors'
 		}).addTo(this.#map);
+	}
+
+	/**
+	 * Promise to show the route of the specified item.
+	 *
+	 * @param {string} itemid
+	 *
+	 * @returns {Promise<void>}
+	 */
+	#promiseShowRoute(itemid) {
+		if (itemid === this.#itemid) {
+			// Do nothing if the route of the specified item ID is already being displayed.
+			return Promise.resolve();
+		}
+
+		// Save the new displayed item ID.
+		this.#itemid = itemid;
+
+		// Remove previous way-points and the finish marker from the map.
+		this.#map_layers.forEach(layer => this.#map.removeLayer(layer));
+		this.#map_layers = [];
 
 		// Calculate current UNIX timestamp.
 		const time = Math.floor(Date.now() / 1000);
@@ -87,8 +136,8 @@ class WMRoute extends CWidget {
 		return ApiCall('history.get', {
 			// Use inline constant instead of numbers.
 			history: ITEM_VALUE_TYPE_STR,
-			// Use exact Item ID for testing purposes.
-			itemids: ['68626'],
+			// Retrieve the history data for the specified item.
+			itemids: [itemid],
 			// Specify the last hour for history data extraction.
 			time_from: time - 60 * 60,
 			time_till: time,
@@ -105,22 +154,48 @@ class WMRoute extends CWidget {
 					// Convert the data to the required format.
 					.map(row => [row.lat, row.lng]);
 
-				// Display the way-points on the map.
-				L.polyline(points, {color: 'blue'}).addTo(this.#map);
+				// Draw the way-points and the marker only if there is any data.
+				if (points.length > 0) {
+					const polyline = L.polyline(points, {color: 'blue'});
 
-				// Create a marker icon from the inline SVG image.
-				const icon = L.icon({
-					iconUrl: `data:image/svg+xml;base64,${btoa(WMRoute.#icon_svg)}`,
-					iconSize: [46, 61],
-					iconAnchor: [22, 44]
-				});
+					// Display the way-points on the map.
+					polyline.addTo(this.#map);
 
-				// Display the icon over the last way-point as a finish marker.
-				L.marker(...points.slice(-1), {icon}).addTo(this.#map);
+					// Create a marker icon from the inline SVG image.
+					const icon = L.icon({
+						iconUrl: `data:image/svg+xml;base64,${btoa(WMRoute.#icon_svg)}`,
+						iconSize: [46, 61],
+						iconAnchor: [22, 44]
+					});
 
-				// Show the whole route centered and fully visible on the map.
-				this.#map.fitBounds(points);
+					const marker = L.marker(...points.slice(-1), {icon});
+
+					// Display the icon over the last way-point as a finish marker.
+					marker.addTo(this.#map);
+
+					// Show the whole route centered and fully visible on the map.
+					this.#map.fitBounds(points);
+
+					this.#map_layers.push(polyline, marker);
+				}
 			});
+	}
+
+	/**
+	 * Intercept the clear-contents event.
+	 *
+	 * Resets the state as if the map was never displayed.
+	 */
+	onClearContents() {
+		if (this.#map !== null) {
+			// Shut down and remove the map.
+			this.#map.remove();
+		}
+
+		this.#map = null;
+		this.#map_layers = [];
+
+		this.#itemid = null;
 	}
 
 	/**
