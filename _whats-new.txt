@@ -1,8 +1,5 @@
-07 - Configuration and Connection
----------------------------------
+08 - UX Improvement
+-------------------
 
-- Simple input fields must be specified in the manifest file.
-- ID type fields are always arrays.
-- The dashboard framework automates the views when using dynamic configuration.
-- Widget might customize contents resetting routine.
-- Widget should only update the changed area.
+- Updates shall happen seamlessly.
+- Just-in-time content modification.

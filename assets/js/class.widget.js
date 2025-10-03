@@ -65,25 +65,10 @@ class WMRoute extends CWidget {
 	 * @returns {Promise<void>}
 	 */
 	promiseUpdate() {
-		if (!this.#isMapCreated()) {
-			// Create and show the map if it's the first update or the contents have been cleared by the dashboard
-			// framework for displaying the "Awaiting data" screen.
-			this.#createAndShowMap();
-		}
-
 		// Get the ID of the item, for which the route shall be displayed (IDs always have a type of array).
 		const itemid = this.getFieldsData().itemid[0];
 
 		return this.#promiseShowRoute(itemid);
-	}
-
-	/**
-	 * Check if the map has been created and is currently being shown.
-	 *
-	 * @returns {boolean}
-	 */
-	#isMapCreated() {
-		return this.#map !== null;
 	}
 
 	/**
@@ -102,11 +87,13 @@ class WMRoute extends CWidget {
 		this._body.appendChild(map_wrapper);
 
 		// Focus the map in the center of London.
-		this.#map = L.map(map_wrapper).setView([51.505, -0.09], 13);
+		const map = L.map(map_wrapper);
 
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 			attribution: '&copy; OpenStreetMap contributors'
-		}).addTo(this.#map);
+		}).addTo(map);
+
+		return map;
 	}
 
 	/**
@@ -148,6 +135,10 @@ class WMRoute extends CWidget {
 			sortorder: 'ASC'
 		})
 			.then(response => {
+				if (this.#map === null) {
+					this.#map = this.#createAndShowMap();
+				}
+
 				const points = response.result
 					// Parse received JSON data.
 					.map(row => JSON.parse(row.value))
