@@ -146,41 +146,62 @@ class WMRoute extends CWidget {
 			sortorder: 'ASC'
 		})
 			.then(response => {
-				if (this.#map === null) {
-					this.#map = this.#createAndShowMap();
-				}
-
 				const points = response.result
 					// Parse received JSON data.
 					.map(row => JSON.parse(row.value))
 					// Convert the data to the required format.
 					.map(row => [row.lat, row.lng]);
 
-				// Draw the way-points and the marker only if there is any data.
-				if (points.length > 0) {
-					const polyline = L.polyline(points, {color: 'blue'});
+				if (points.length === 0) {
+					// Show a nice message in case if there are no way-points to show.
+					this.#showNoDataFound();
 
-					// Display the way-points on the map.
-					polyline.addTo(this.#map);
-
-					// Create a marker icon from the inline SVG image.
-					const icon = L.icon({
-						iconUrl: `data:image/svg+xml;base64,${btoa(WMRoute.#icon_svg)}`,
-						iconSize: [46, 61],
-						iconAnchor: [22, 44]
-					});
-
-					const marker = L.marker(...points.slice(-1), {icon});
-
-					// Display the icon over the last way-point as a finish marker.
-					marker.addTo(this.#map);
-
-					// Show the whole route centered and fully visible on the map.
-					this.#map.fitBounds(points);
-
-					this.#map_layers.push(polyline, marker);
+					return;
 				}
+
+				if (this.#map === null) {
+					this.#map = this.#createAndShowMap();
+				}
+
+				const polyline = L.polyline(points, {color: 'blue'});
+
+				// Display the way-points on the map.
+				polyline.addTo(this.#map);
+
+				// Create a marker icon from the inline SVG image.
+				const icon = L.icon({
+					iconUrl: `data:image/svg+xml;base64,${btoa(WMRoute.#icon_svg)}`,
+					iconSize: [46, 61],
+					iconAnchor: [22, 44]
+				});
+
+				const marker = L.marker(...points.slice(-1), {icon});
+
+				// Display the icon over the last way-point as a finish marker.
+				marker.addTo(this.#map);
+
+				// Show the whole route centered and fully visible on the map.
+				this.#map.fitBounds(points);
+
+				this.#map_layers.push(polyline, marker);
 			});
+	}
+
+	/**
+	 * Show a no-data message and clear the previously displayed contents.
+	 */
+	#showNoDataFound() {
+		// Calling this method will also invoke the onClearContents method.
+		this.clearContents();
+
+		const message_wrapper = document.createElement('div');
+
+		message_wrapper.textContent = 'No data found';
+
+		// Use standard classes to specify the look of the message.
+		message_wrapper.classList.add(ZBX_STYLE_NO_DATA_MESSAGE, ZBX_ICON_SEARCH_LARGE);
+
+		this._body.appendChild(message_wrapper);
 	}
 
 	/**

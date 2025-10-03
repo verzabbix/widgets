@@ -1,6 +1,4 @@
-09 - Time Periods
------------------
+Variety of Views
+----------------
 
-- Standard time period field is added in the manifest file.
-- Having a time period field will activate a time period selector on the dashboard.
-- Time period format contains "from", "to", "from_ts" and "to_ts" fields.
+- Widget can implement different views, like the dedicated "No data" view.
