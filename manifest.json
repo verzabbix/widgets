@@ -6,5 +6,11 @@
 	"namespace": "WMRoute",
 	"version": "1.0",
 	"author": "Wellmade",
-	"description": "Displays route on a map."
+	"description": "Displays route on a map.",
+	"widget": {
+		"js_class": "WMRoute"
+	},
+	"assets": {
+		"js": ["class.widget.js"]
+	}
 }
