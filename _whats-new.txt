@@ -1,5 +1,6 @@
-08 - UX Improvement
--------------------
+09 - Time Periods
+-----------------
 
-- Updates shall happen seamlessly.
-- Just-in-time content modification.
+- Standard time period field is added in the manifest file.
+- Having a time period field will activate a time period selector on the dashboard.
+- Time period format contains "from", "to", "from_ts" and "to_ts" fields.

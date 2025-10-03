@@ -36,6 +36,13 @@ class WMRoute extends CWidget {
 	#itemid = null;
 
 	/**
+	 * The time period for which the route is currently being displayed.
+	 *
+	 * @type {Object|null}
+	 */
+	#time_period = null;
+
+	/**
 	 * Resolve as soon as the widget is fully rendered (ready for printing).
 	 *
 	 * Overloads the default implementation of the readiness method.
@@ -65,10 +72,16 @@ class WMRoute extends CWidget {
 	 * @returns {Promise<void>}
 	 */
 	promiseUpdate() {
-		// Get the ID of the item, for which the route shall be displayed (IDs always have a type of array).
-		const itemid = this.getFieldsData().itemid[0];
+		// Get the actual configuration data.
+		const fields_data = this.getFieldsData();
 
-		return this.#promiseShowRoute(itemid);
+		// Get the ID of the item, for which the route shall be displayed (IDs always have a type of array).
+		const itemid = fields_data.itemid[0];
+
+		// Time period object, containing "from", "to", "from_ts" and "to_ts" keys.
+		const time_period = fields_data.time_period;
+
+		return this.#promiseShowRoute(itemid, time_period);
 	}
 
 	/**
@@ -100,34 +113,32 @@ class WMRoute extends CWidget {
 	 * Promise to show the route of the specified item.
 	 *
 	 * @param {string} itemid
+	 * @param {Object} time_period
 	 *
 	 * @returns {Promise<void>}
 	 */
-	#promiseShowRoute(itemid) {
-		if (itemid === this.#itemid) {
-			// Do nothing if the route of the specified item ID is already being displayed.
+	#promiseShowRoute(itemid, time_period) {
+		if (itemid === this.#itemid && time_period === this.#time_period) {
+			// Do nothing if the route of the specified item ID and the time period is already being displayed.
 			return Promise.resolve();
 		}
 
-		// Save the new displayed item ID.
+		// Save the new displayed item ID and the time period.
 		this.#itemid = itemid;
+		this.#time_period = time_period;
 
 		// Remove previous way-points and the finish marker from the map.
 		this.#map_layers.forEach(layer => this.#map.removeLayer(layer));
 		this.#map_layers = [];
 
-		// Calculate current UNIX timestamp.
-		const time = Math.floor(Date.now() / 1000);
-
 		// Run the "history.get" ZABBIX API method and return a promise.
 		return ApiCall('history.get', {
 			// Use inline constant instead of numbers.
 			history: ITEM_VALUE_TYPE_STR,
-			// Retrieve the history data for the specified item.
+			// Retrieve the history data for the specified item and the time period.
 			itemids: [itemid],
-			// Specify the last hour for history data extraction.
-			time_from: time - 60 * 60,
-			time_till: time,
+			time_from: time_period.from_ts,
+			time_till: time_period.to_ts,
 			// Get only the values from the history, timestamps are not needed.
 			output: ['value'],
 			// Sort the data by the clock.
@@ -187,6 +198,7 @@ class WMRoute extends CWidget {
 		this.#map_layers = [];
 
 		this.#itemid = null;
+		this.#time_period = null;
 	}
 
 	/**
